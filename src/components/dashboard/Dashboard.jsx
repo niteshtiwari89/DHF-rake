@@ -14,12 +14,7 @@ import {
     isWithinInterval,
     isValid,
 } from "date-fns"
-import { Filter, Download, Search, Calendar, Building, History } from "lucide-react"
-
-import ReactExport from 'react-data-export';
-
-const ExcelFile = ReactExport.ExcelFile;  // Use directly from ReactExport
-const ExcelSheet = ReactExport.ExcelSheet; 
+import { Filter, Download, Search, Calendar, Building, History } from "lucide-react" 
  
 
 const Dashboard = () => {
@@ -34,7 +29,6 @@ const Dashboard = () => {
     const [customStartDate, setCustomStartDate] = useState("")
     const [customEndDate, setCustomEndDate] = useState("")
     const [lastFetchTime, setLastFetchTime] = useState(null)
-    const [debugInfo, setDebugInfo] = useState({}) // For debugging
     const [appliedFilters, setAppliedFilters] = useState({
         plant: "All",
         filter: "today",
@@ -50,9 +44,6 @@ const Dashboard = () => {
     const getToken = () => {
         return localStorage.getItem("token")
     }
-    console.log("ReactExport", ReactExport); 
-    console.log("Excel File",ExcelFile);
-    console.log("Excel Sheet",ExcelSheet);
 
     // Config with authorization header
     const getAuthConfig = useCallback(() => {
@@ -64,17 +55,17 @@ const Dashboard = () => {
             },
             timeout: 10000, // 10 second timeout
         }
-    })
+    }, [])
 
     // Validate rake data
-    const validateRakeData = (rake) => {
+    const validateRakeData = useCallback((rake) => {
         return (
             rake && typeof rake === "object" && rake.adminName && rake.rakeNo && rake.date && rake.time && !isNaN(rake.wagons)
         )
-    }
+    }, [])
 
     // Function to safely parse date
-    const parseSafeDate = (dateStr, timeStr) => {
+    const parseSafeDate = useCallback((dateStr, timeStr) => {
         try {
             const time24hr = convertTo24HourFormat(timeStr)
             const combinedDateTime = `${dateStr} ${time24hr}`
@@ -84,7 +75,7 @@ const Dashboard = () => {
             console.error("Error parsing date:", error)
             return new Date()
         }
-    }
+    }, [convertTo24HourFormat])
 
     // Enhanced time conversion with validation
     const convertTo24HourFormat = useCallback((time) => {
@@ -113,9 +104,9 @@ const Dashboard = () => {
     }, [])
 
     // Helper function to normalize strings for comparison
-    const normalizeString = (str) => {
+    const normalizeString = useCallback((str) => {
         return str ? str.trim().toLowerCase() : ""
-    }
+    }, [])
 
     // Fetch plants from the API with improved error handling
     const fetchPlants = useCallback(async () => {
@@ -316,7 +307,6 @@ const Dashboard = () => {
                 })
 
                 // Set debug info for troubleshooting
-                setDebugInfo(debug)
                 console.log("Filtering debug info:", debug)
 
                 // Sort all rake details by dateTime (most recent first)
@@ -341,7 +331,7 @@ const Dashboard = () => {
                 setLoading(false)
             }
         },
-        [lastFetchTime, getAuthConfig, normalizeString, appliedFilters.plant],
+        [lastFetchTime, getAuthConfig, normalizeString, appliedFilters.plant, parseSafeDate, validateRakeData],
     )
 
     // Initial fetch for plants and rake details
@@ -458,65 +448,30 @@ const Dashboard = () => {
     const filteredRakeDetails = rakeDetails.filter(safeFilter)
 
     // Safe download function
-    // const downloadReport = useCallback(() => {
-    //     try {
-    //         const workbook = XLSX.utils.book_new()
-    //         const exportData = filteredRakeDetails.map((rake) => ({
-    //             Plant: rake.plant || "N/A",
-    //             "Operator Name": rake.adminName || "N/A",
-    //             "Rake No": rake.rakeNo || "N/A",
-    //             Source: rake.source || "N/A",
-    //             "Arrival Date": rake.date || "N/A",
-    //             "No of Wagons": rake.wagons || 0,
-    //             "Check In Time": rake.time || "-",
-    //             "Check Out Time": rake.checkoutTime || "-",
-    //             Status: rake.isCheckedOut ? "Checked Out" : "Not Checked Out",
-    //             Timing: rake.timing || "-",
-    //         }))
-
-    //         const worksheet = XLSX.utils.json_to_sheet(exportData)
-    //         XLSX.utils.book_append_sheet(workbook, worksheet, "Rake Data")
-    //         XLSX.writeFile(workbook, `rake_report_${new Date().toISOString().split("T")[0]}.xlsx`)
-    //     } catch (error) {
-    //         console.error("Error downloading report:", error)
-    //         alert("Failed to download report. Please try again.")
-    //     }
-    // }, [filteredRakeDetails])
-
     const downloadReport = useCallback(() => {
         try {
-          // Prepare data for export
-          const exportData = filteredRakeDetails.map(rake => ({
-            Plant: rake.plant || "N/A",
-            "Operator Name": rake.adminName || "N/A",
-            "Rake No": rake.rakeNo || "N/A",
-            Source: rake.source || "N/A",
-            "Arrival Date": rake.date || "N/A",
-            "No of Wagons": rake.wagons || 0,
-            "Check In Time": rake.time || "-",
-            "Check Out Time": rake.checkoutTime || "-",
-            Status: rake.isCheckedOut ? "Checked Out" : "Not Checked Out",
-            Timing: rake.timing || "-"
-          }));
-      
-          // Use ReactExport's ExcelFile directly, if ExcelSheet is unavailable
-          const element = (
-            <ReactExport.ExcelFile
-              element={<button>Download Rake Report</button>}
-            >
-              <ReactExport.ExcelSheet data={exportData} name="Rake Data">
-                {/* Define your columns and data here */}
-              </ReactExport.ExcelSheet>
-            </ReactExport.ExcelFile>
-          );
-      
-          // Trigger the download
-          element.props.element.click(); // Programmatically trigger the download
+            const workbook = XLSX.utils.book_new()
+            const exportData = filteredRakeDetails.map((rake) => ({
+                Plant: rake.plant || "N/A",
+                "Operator Name": rake.adminName || "N/A",
+                "Rake No": rake.rakeNo || "N/A",
+                Source: rake.source || "N/A",
+                "Arrival Date": rake.date || "N/A",
+                "No of Wagons": rake.wagons || 0,
+                "Check In Time": rake.time || "-",
+                "Check Out Time": rake.checkoutTime || "-",
+                Status: rake.isCheckedOut ? "Checked Out" : "Not Checked Out",
+                Timing: rake.timing || "-",
+            }))
+
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Rake Data")
+            XLSX.writeFile(workbook, `rake_report_${new Date().toISOString().split("T")[0]}.xlsx`)
         } catch (error) {
-          console.error("Error downloading report:", error);
-          alert("Failed to download report. Please try again.");
+            console.error("Error downloading report:", error)
+            alert("Failed to download report. Please try again.")
         }
-      }, [filteredRakeDetails]);
+    }, [filteredRakeDetails])
     // Apply filters function - to be called when the filter button is clicked
     const applyFilters = () => {
         setAppliedFilters({
@@ -692,12 +647,10 @@ const calculateTimeLeft = (dateTime, duration) => {
     if (timeLeft > 0) {
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
         return { timeLeft: `${hours}h ${minutes}m left`, timeLeftMs: timeLeft };
     } else if (timeLeft < 0) {
         const hours = Math.floor(timeLeft / (1000 * 60 * 60));
         const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
         return {
             timeLeft: `+ ${-hours}h ${-minutes}m exceed`,
             timeLeftMs: timeLeft,
