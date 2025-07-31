@@ -834,8 +834,6 @@ import { useNavigate } from "react-router-dom"
 import "./AssignedWagon.css"
 import * as XLSX from "xlsx"
 import axios from "axios"
-import Excel from 'exceljs'
-// const Excel = require('exceljs')
 import {
     startOfDay,
     endOfDay,
@@ -1393,78 +1391,22 @@ const AssignedWagon = () => {
 
     const downloadReport = useCallback(() => {
         try {
-            // Create a new workbook
-            const workbook = new Excel.Workbook();
-            const sheet = workbook.addWorksheet("My Sheet");
-    
-            // Set default row height
-            // sheet.properties.defaultRowHeight = 80;
+            const workbook = XLSX.utils.book_new()
+            const exportData = filteredAssignedWagons.map((wagon) => ({
+                "Id": wagon.key || "N/A",
+                "Plant": wagon.plant || "N/A",
+                "Rake No": wagon.rakeNo || "N/A", 
+                "No of Wagons": wagon.noOfWagon || 0
+            }))
 
-            sheet.getRow(1).border = {
-                top:{style:'thick', color:{argb:"FFFF00000"}},
-                bottom:{style:'thick', color:{argb:"FFFF00000"}},
-                right:{style:'thick', color:{argb:"FFFF00000"}},
-                left:{style:'thick', color:{argb:"FFFF00000"}}
-            }
-    
-            sheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-            // Define columns for the sheet
-            sheet.columns = [
-                {
-                    header: "Id",
-                    key: "id",
-                    width: 10
-                },
-                {
-                    header: "Plant",
-                    key: "plant",
-                    width: 10
-                },
-                {
-                    header: "No of Wagons",
-                    key: "no",
-                    width: 15
-                },
-                {
-                    header: "Wagon",
-                    key: "wagon",
-                    width: 10
-                }
-            ];
-    
-            // Add rows from filteredAssignedWagons
-            filteredAssignedWagons.forEach(wagon => {
-                sheet.addRow({
-                    id: wagon.key,
-                    plant: wagon.plant,
-                    no: wagon.rakeNo,
-                    wagon: wagon.noOfWagon
-                });
-            });
-    
-            // Generate the Excel buffer
-            workbook.xlsx.writeBuffer().then((data) => {
-                // Create a Blob with the generated buffer
-                const blob = new Blob([data], {
-                    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                });
-    
-                // Create a download link
-                const url = window.URL.createObjectURL(blob);
-                const anchor = document.createElement("a");
-                anchor.href = url;
-                anchor.download = "assigned_wagons_report.xlsx"; // Define a file name here
-                anchor.click();
-    
-                // Clean up the object URL
-                window.URL.revokeObjectURL(url);
-            });
+            const worksheet = XLSX.utils.json_to_sheet(exportData)
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Assigned Wagons")
+            XLSX.writeFile(workbook, `assigned_wagons_report_${new Date().toISOString().split("T")[0]}.xlsx`)
         } catch (error) {
-            console.error("Error downloading report:", error);
-            alert("Failed to download report. Please try again.");
+            console.error("Error downloading report:", error)
+            alert("Failed to download report. Please try again.")
         }
-    }, [filteredAssignedWagons]);
-    
+    }, [filteredAssignedWagons])
 
     // Apply filters function - to be called when the filter button is clicked
     const applyFilters = () => {
