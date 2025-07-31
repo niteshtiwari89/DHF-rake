@@ -1,16 +1,4 @@
 {
-  "buildCommand": "npm run build:vercel",
-  "outputDirectory": "dist",
-  "installCommand": "npm ci --legacy-peer-deps",
-  "framework": "vite",
-  "env": {
-    "NODE_VERSION": "18.18.0"
-  },
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
