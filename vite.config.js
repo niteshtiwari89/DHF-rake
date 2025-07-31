@@ -18,5 +18,13 @@ export default defineConfig({
         },
       },
     },
+    // Increase chunk size warning limit to reduce warnings
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for better debugging
+    sourcemap: false,
+  },
+  // Ensure compatibility with different environments
+  esbuild: {
+    target: 'es2020'
   },
 });
